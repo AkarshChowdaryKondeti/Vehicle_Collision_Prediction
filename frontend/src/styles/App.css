@@ -1,0 +1,182 @@
+/* General Styles */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f7f8fc;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  color: #333;
+}
+
+/* Header Styles */
+.header {
+  background: linear-gradient(135deg, #1B2B4B, #2E5FA3);
+  color: white;
+  text-align: center;
+  padding: 20px 20px;
+}
+
+.header h1 {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.header p {
+  font-size: 16px;
+  opacity: 0.8;
+}
+
+/* Main Layout */
+.main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+  justify-content: space-around;
+  padding: 40px;
+  flex: 1;
+  max-width: 100%;
+}
+
+/* Card Styling */
+.card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 350px;
+  margin-top: 20px;
+}
+
+.card h2 {
+  font-size: 22px;
+  color: #1B2B4B;
+  border-bottom: 2px solid #e0e0e0;
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+/* Input Form Styles */
+.field {
+  margin-bottom: 20px;
+}
+
+.field label {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.field input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  background-color: #fafcff;
+  color: #333;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+}
+
+.field input:focus {
+  outline: none;
+  border: 1px solid #2E5FA3;
+  background-color: #fff;
+}
+
+/* Buttons */
+.button, .resetButton {
+  padding: 12px 20px;
+  font-size: 14px;
+  color: white;
+  background-color: #1B2B4B;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.button:hover {
+  background-color: #2E5FA3;
+}
+
+.resetButton {
+  background-color: #e0e0e0;
+  color: #1B2B4B;
+}
+
+.resetButton:hover {
+  background-color: #ccc;
+}
+
+/* Status Banner */
+.statusBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+  margin-top: 20px;
+  border-radius: 12px;
+  color: #060606;
+}
+
+.statusEmoji {
+  font-size: 40px;
+}
+
+.statusLabel {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Instructions Section */
+.instruction {
+  margin-top: 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  text-align: center;
+  padding: 10px;
+  background-color: #f1f8e9;
+  border-radius: 8px;
+}
+
+/* History Table */
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.historyTable th,
+.historyTable td {
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.historyTable th {
+  background-color: #2E5FA3;
+  color: white;
+}
+
+.historyTable tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.historyTable tr:hover {
+  background-color: #e0f0ff;
+}
+
+/* Footer */
+.footer {
+  background-color: #e4e9f2;
+  text-align: center;
+  padding: 12px;
+  font-size: 12px;
+  color: #666;
+}
