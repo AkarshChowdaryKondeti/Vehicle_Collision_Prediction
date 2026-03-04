@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vehicle Safety Prediction
 
 This is a full-stack project with a FastAPI backend and a React frontend.
@@ -80,3 +81,6 @@ Frontend URL:
 - Frontend reads backend at `http://localhost:8000` (configured in `frontend/src/components/App.js`).
 - Prediction history is stored in `backend/predictions.db`.
 - `backend/scaler.pkl` and `backend/train_model.py` are not required for current runtime inference.
+=======
+# Vehicle_Collision_Prediction
+>>>>>>> 4545506fee0d71136ae73654ba9f1168b69029fb
