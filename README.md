@@ -1,4 +1,4 @@
-# Vehicle_Collision_Predictio
+# Vehicle Safety Prediction
 
 ## Overview
 
@@ -25,7 +25,6 @@ vehicle_safety/
 │   ├── models.py          # Database schema for predictions
 │   ├── schemas.py         # Pydantic models for validation
 │   ├── model.pkl          # Pre-trained model artifact
-│   ├── scaler.pkl         # Legacy model artifact
 │   ├── predictions.db     # SQLite database storing prediction history
 │   └── requirements.txt   # Python dependencies
 ├── frontend/
@@ -36,9 +35,9 @@ vehicle_safety/
 │       ├── components/App.js # Main app component
 │       └── styles/App.css # Styling for the frontend
 ├── data/
-│   └── vehicle_dataset.csv  # Training dataset reference
+│   └── vehicle_dataset.csv  # Dataset reference (for review/demo)
 └── README.md              # Project overview and setup guide
-````
+```
 
 ---
 
@@ -47,7 +46,7 @@ vehicle_safety/
 ### Backend
 
 * The backend runs on **FastAPI**, where sensor data is sent via the `POST /predict` endpoint for processing.
-* It loads a pre-trained **Random Forest model** from `backend/model.pkl`.
+* It loads a pre-trained model from `backend/model.pkl` (or `MODEL_PATH` env var).
 * The prediction is returned to the frontend with a safety status of `SAFE`, `RISK`, or `HIGH RISK`.
 * Each prediction is saved in the **SQLite database** (`predictions.db`), which stores all sensor data, predictions, and timestamps.
 
@@ -143,7 +142,7 @@ vehicle_safety/
     ```json
     {
       "predicted_status": "SAFE",
-      "message": "Vehicle is in safe condition."
+      "message": "✅ Vehicle is operating safely."
     }
     ```
 * **GET /history**: Fetch the latest prediction history (supports `limit` parameter).
@@ -159,6 +158,7 @@ vehicle_safety/
 
    * **Distance**
    * **Time-to-Collision (TTC)**
+   * **Axis**
    * **Speed**
    * **Steering angle**
    * **Relative velocity**
@@ -174,7 +174,7 @@ vehicle_safety/
 
 * **Frontend** makes requests to the backend at `http://localhost:8000`.
 * **Prediction history** is stored in the **SQLite database** (`predictions.db`).
-* **Model training** is done using `train_model.py`, but the trained model (`model.pkl`) is used during runtime.
+* Runtime inference uses a fixed `backend/model.pkl`; model training is not part of this repository workflow.
 * **Scalable Deployment**: This project can be deployed to cloud platforms like AWS, Heroku, or DigitalOcean for production use.
 
 ---

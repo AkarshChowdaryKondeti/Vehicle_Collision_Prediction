@@ -1,8 +1,11 @@
+// React hook for local component state management.
 import React, { useState } from "react";
 import "../styles/App.css";  // Importing the CSS file for styling
 
 // Constants for API and Hidden Defaults
+// Backend API base URL used by prediction and history calls.
 const API_BASE = "http://localhost:8000";
+// Hidden default sensor values not entered directly in the UI form.
 const DEFAULTS = {
   axis: 0.1,
   speed: 60,
@@ -10,6 +13,7 @@ const DEFAULTS = {
 };
 
 // Status theme configuration
+// Visual style and labels for each normalized prediction status.
 const STATUS_THEME = {
   "SAFE": {
     bg: "#e8f5e9",
@@ -34,6 +38,7 @@ const STATUS_THEME = {
   },
 };
 
+// Normalize backend status variants into canonical keys used in UI.
 const normalizeStatus = (status) => {
   if (!status) return "SAFE";
   const key = String(status).trim().toUpperCase();
@@ -43,9 +48,11 @@ const normalizeStatus = (status) => {
 };
 
 // Default form structure
+// Controlled input defaults for the prediction form.
 const initialForm = { distance: "", ttc: "", relative_velocity: "" };
 
 // Instructions for each status
+// Advisory text shown below prediction result card.
 const INSTRUCTIONS = {
   "SAFE": "You are good to go! Keep driving safely.",
   "RISK": "Caution! Potential hazard detected, be prepared to slow down.",
@@ -53,23 +60,33 @@ const INSTRUCTIONS = {
 };
 
 function App() {
+  // Form values for user-entered sensor inputs.
   const [form, setForm] = useState(initialForm);
+  // Latest prediction response from backend.
   const [result, setResult] = useState(null);
+  // Loading state for prediction request.
   const [loading, setLoading] = useState(false);
+  // Error message shown on failed validation/request.
   const [error, setError] = useState(null);
+  // Snapshot of payload sent for latest prediction.
   const [submittedData, setSubmittedData] = useState(null);
+  // Cached prediction history list.
   const [history, setHistory] = useState([]);
+  // Toggle for history panel visibility.
   const [showHistory, setShowHistory] = useState(false);
+  // Loading state for history request.
   const [histLoading, setHistLoading] = useState(false);
 
   // Handle form input changes
   const handleChange = (e) => {
+    // Update only changed field while preserving other inputs.
     setForm({ ...form, [e.target.name]: e.target.value });
     setError(null); // Reset error on input change
   };
 
   // Reset form to initial state
   const resetForm = () => {
+    // Clear form and previous prediction state.
     setForm(initialForm);
     setResult(null);
     setError(null);
@@ -77,6 +94,7 @@ function App() {
 
   // Submit form and fetch prediction result
   const handleSubmit = async (e) => {
+    // Stop browser default form submit/reload.
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -90,13 +108,16 @@ function App() {
     }
 
     const payload = {
+      // Convert string inputs to numbers expected by backend schema.
       distance: parseFloat(form.distance),
       ttc: parseFloat(form.ttc),
       relative_velocity: parseFloat(form.relative_velocity),
+      // Append hidden defaults for remaining model features.
       ...DEFAULTS,
     };
 
     try {
+      // Send prediction request to backend API.
       const response = await fetch(`${API_BASE}/predict`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,6 +129,7 @@ function App() {
       }
 
       const data = await response.json();
+      // Store API output and submitted input snapshot.
       setResult(data);
       setSubmittedData(payload);
     } catch (err) {
@@ -121,6 +143,7 @@ function App() {
   const fetchHistory = async () => {
     setHistLoading(true);
     try {
+      // Pull latest 20 prediction rows for history table.
       const res = await fetch(`${API_BASE}/history?limit=20`);
       setHistory(await res.json());
     } catch {
@@ -131,11 +154,13 @@ function App() {
   };
 
   const toggleHistory = () => {
+    // Lazy-load history only when opening the panel first.
     if (!showHistory) fetchHistory();
     setShowHistory(!showHistory);
   };
 
   // Determine theme based on result status
+  // Pick color/emojis by normalized prediction status.
   const theme = result ? STATUS_THEME[normalizeStatus(result.predicted_status)] : null;
 
   return (
@@ -258,6 +283,7 @@ function App() {
                   </thead>
                   <tbody>
                     {history.map((row) => {
+                      // Apply same status normalization and color mapping in table rows.
                       const normalizedStatus = normalizeStatus(row.predicted_status);
                       const t = STATUS_THEME[normalizedStatus] || STATUS_THEME.SAFE;
                       return (

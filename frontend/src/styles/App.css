@@ -1,4 +1,5 @@
 /* General Styles */
+/* Base page typography, spacing reset, and app background. */
 body {
   font-family: 'Arial', sans-serif;
   background-color: #f7f8fc;
@@ -11,6 +12,7 @@ body {
 }
 
 /* Header Styles */
+/* Top banner branding and subtitle container. */
 .header {
   background: linear-gradient(135deg, #1B2B4B, #2E5FA3);
   color: white;
@@ -29,6 +31,7 @@ body {
 }
 
 /* Main Layout */
+/* Responsive row layout that holds all dashboard cards. */
 .main {
   display: flex;
   flex-wrap: wrap;
@@ -40,6 +43,7 @@ body {
 }
 
 /* Card Styling */
+/* Shared card container style for form, result, and history sections. */
 .card {
   background-color: white;
   padding: 20px;
@@ -59,6 +63,7 @@ body {
 }
 
 /* Input Form Styles */
+/* Spacing wrapper for each label + input pair. */
 .field {
   margin-bottom: 20px;
 }
@@ -89,6 +94,7 @@ body {
 }
 
 /* Buttons */
+/* Shared primary/secondary button base style. */
 .button, .resetButton {
   padding: 12px 20px;
   font-size: 14px;
@@ -114,6 +120,7 @@ body {
 }
 
 /* Status Banner */
+/* Predicted status highlight card with icon + text. */
 .statusBanner {
   display: flex;
   align-items: center;
@@ -134,6 +141,7 @@ body {
 }
 
 /* Instructions Section */
+/* Action guidance panel shown after a prediction. */
 .instruction {
   margin-top: 20px;
   font-size: 16px;
@@ -146,6 +154,7 @@ body {
 }
 
 /* History Table */
+/* Tabular layout for recent prediction records. */
 .historyTable {
   width: 100%;
   border-collapse: collapse;
@@ -173,6 +182,7 @@ body {
 }
 
 /* Footer */
+/* Fixed project info strip at bottom of page. */
 .footer {
   background-color: #e4e9f2;
   text-align: center;
