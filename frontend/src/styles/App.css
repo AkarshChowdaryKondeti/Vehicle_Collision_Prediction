@@ -1,192 +1,514 @@
-/* General Styles */
-/* Base page typography, spacing reset, and app background. */
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f7f8fc;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  color: #333;
+  min-height: 100vh;
+  font-family: "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(46, 95, 163, 0.18), transparent 28%),
+    linear-gradient(180deg, #f4f7fb 0%, #e9eef6 100%);
+  color: #1f2937;
 }
 
-/* Header Styles */
-/* Top banner branding and subtitle container. */
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .header {
-  background: linear-gradient(135deg, #1B2B4B, #2E5FA3);
-  color: white;
+  background: linear-gradient(135deg, #102542, #224f8f);
+  color: #fff;
   text-align: center;
-  padding: 20px 20px;
+  padding: 28px 20px 24px;
+  box-shadow: 0 10px 30px rgba(16, 37, 66, 0.18);
 }
 
 .header h1 {
-  font-size: 36px;
-  margin-bottom: 10px;
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: 0.02em;
 }
 
-.header p {
-  font-size: 16px;
-  opacity: 0.8;
-}
-
-/* Main Layout */
-/* Responsive row layout that holds all dashboard cards. */
-.main {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
-  justify-content: space-around;
-  padding: 40px;
+.dashboardSingle {
+  width: min(1100px, calc(100% - 32px));
+  margin: 28px auto;
   flex: 1;
-  max-width: 100%;
 }
 
-/* Card Styling */
-/* Shared card container style for form, result, and history sections. */
-.card {
-  background-color: white;
-  padding: 20px;
-  border-radius: 15px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 350px;
-  margin-top: 20px;
-}
-
-.card h2 {
-  font-size: 22px;
-  color: #1B2B4B;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 10px;
+.viewSwitch {
+  display: inline-flex;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 12px 30px rgba(22, 34, 66, 0.1);
+  backdrop-filter: blur(10px);
   margin-bottom: 20px;
 }
 
-/* Input Form Styles */
-/* Spacing wrapper for each label + input pair. */
+.viewTab {
+  border: none;
+  border-radius: 12px;
+  padding: 12px 22px;
+  background: transparent;
+  color: #526074;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.viewTab:hover {
+  transform: translateY(-1px);
+}
+
+.activeTab {
+  background: linear-gradient(135deg, #102542, #2e5fa3);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(34, 79, 143, 0.24);
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 24px;
+  box-shadow: 0 18px 50px rgba(22, 34, 66, 0.12);
+  backdrop-filter: blur(10px);
+}
+
+.mainPanel {
+  min-height: 520px;
+  overflow: hidden;
+}
+
+.panelContent {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.panelColumn {
+  padding: 24px;
+}
+
+.panelColumn h2,
+.historyViewHeader h2 {
+  margin: 0 0 18px;
+  font-size: 1.25rem;
+  color: #102542;
+}
+
+.panelOutput {
+  background: linear-gradient(180deg, rgba(16, 37, 66, 0.04), rgba(34, 79, 143, 0.08));
+  border-left: 1px solid rgba(16, 37, 66, 0.08);
+}
+
 .field {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .field label {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 6px;
   display: block;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
 }
 
 .field input {
   width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-  background-color: #fafcff;
-  color: #333;
   box-sizing: border-box;
-  transition: all 0.3s ease;
+  padding: 13px 14px;
+  border: 1px solid #d3dae6;
+  border-radius: 12px;
+  background: #f9fbff;
+  color: #1f2937;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .field input:focus {
   outline: none;
-  border: 1px solid #2E5FA3;
-  background-color: #fff;
+  border-color: #2e5fa3;
+  box-shadow: 0 0 0 4px rgba(46, 95, 163, 0.14);
+  background: #fff;
 }
 
-/* Buttons */
-/* Shared primary/secondary button base style. */
-.button, .resetButton {
-  padding: 12px 20px;
-  font-size: 14px;
-  color: white;
-  background-color: #1B2B4B;
+.buttonRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.button,
+.resetButton {
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
-.button:hover {
-  background-color: #2E5FA3;
+.button {
+  background: linear-gradient(135deg, #102542, #2e5fa3);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(34, 79, 143, 0.22);
+}
+
+.button:hover,
+.resetButton:hover {
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .resetButton {
-  background-color: #e0e0e0;
-  color: #1B2B4B;
+  background: #e8edf5;
+  color: #102542;
 }
 
-.resetButton:hover {
-  background-color: #ccc;
+.placeholder {
+  border: 1px dashed #c6d2e3;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+  padding: 22px;
+  color: #526074;
 }
 
-/* Status Banner */
-/* Predicted status highlight card with icon + text. */
 .statusBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  border-radius: 18px;
   padding: 20px;
-  margin-top: 20px;
-  border-radius: 12px;
-  color: #060606;
-}
-
-.statusEmoji {
-  font-size: 40px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .statusLabel {
-  font-size: 24px;
-  font-weight: bold;
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
-/* Instructions Section */
-/* Action guidance panel shown after a prediction. */
-.instruction {
-  margin-top: 20px;
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-  text-align: center;
-  padding: 10px;
-  background-color: #f1f8e9;
-  border-radius: 8px;
+.metricRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.45);
+  font-size: 0.95rem;
 }
 
-/* History Table */
-/* Tabular layout for recent prediction records. */
+.messageText {
+  line-height: 1.5;
+}
+
+.submittedData {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(16, 37, 66, 0.05);
+  color: #334155;
+  line-height: 1.7;
+}
+
+.error {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fdecea;
+  color: #8a1c1c;
+  font-size: 0.92rem;
+}
+
+.historyViewHeader {
+  padding: 24px 24px 0;
+}
+
+.historyViewHeader p {
+  margin: -4px 0 18px;
+  color: #526074;
+}
+
+.historyCard {
+  padding: 0 24px 24px;
+  overflow: auto;
+}
+
+.statsLayout {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 0 24px 24px;
+}
+
+.chartCard {
+  border: 1px solid rgba(16, 37, 66, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 247, 251, 0.95));
+}
+
+.chartTitle {
+  margin-bottom: 16px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #102542;
+}
+
+.chartEmpty {
+  border: 1px dashed #c6d2e3;
+  border-radius: 14px;
+  padding: 22px;
+  color: #526074;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.chartWrap {
+  width: 100%;
+}
+
+.pieWrap {
+  display: grid;
+  gap: 18px;
+  align-items: center;
+}
+
+.pieChart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chartCenterValue {
+  font-size: 1.8rem;
+  font-weight: 700;
+  fill: #102542;
+}
+
+.chartCenterLabel {
+  font-size: 0.78rem;
+  fill: #64748b;
+}
+
+.chartLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legendRow {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.92rem;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.summaryCards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.summaryCard {
+  border-radius: 14px;
+  padding: 14px;
+  background: #f8fbff;
+  border: 1px solid #dbe4f0;
+}
+
+.summaryLabel {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.summaryValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.statsTableWrap {
+  overflow: auto;
+  margin-bottom: 18px;
+}
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.statsTable th,
+.statsTable td {
+  padding: 11px 12px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.statsTable thead {
+  background: #102542;
+  color: #fff;
+}
+
+.statsTable tbody tr:nth-child(even) {
+  background: rgba(16, 37, 66, 0.04);
+}
+
+.statsStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.insightPanel {
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(180deg, #fff8f8, #fff1f1);
+  border: 1px solid #f1c8c8;
+}
+
+.insightHeading {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #7f1d1d;
+  margin-bottom: 8px;
+}
+
+.insightText {
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.insightMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.insightMetric {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insightMetric span {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.insightMetric strong {
+  font-size: 1.05rem;
+  color: #102542;
+}
+
 .historyTable {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 .historyTable th,
 .historyTable td {
-  padding: 12px;
+  padding: 12px 14px;
   text-align: left;
-  font-size: 14px;
+  font-size: 0.92rem;
 }
 
-.historyTable th {
-  background-color: #2E5FA3;
-  color: white;
+.historyTable thead {
+  background: #102542;
+  color: #fff;
 }
 
-.historyTable tr:nth-child(even) {
-  background-color: #f9f9f9;
+.historyTable tbody tr:nth-child(even) {
+  background: rgba(16, 37, 66, 0.04);
 }
 
-.historyTable tr:hover {
-  background-color: #e0f0ff;
+.historyTable tbody tr:hover {
+  background: rgba(46, 95, 163, 0.1);
 }
 
-/* Footer */
-/* Fixed project info strip at bottom of page. */
-.footer {
-  background-color: #e4e9f2;
-  text-align: center;
-  padding: 12px;
-  font-size: 12px;
-  color: #666;
+@media (max-width: 900px) {
+  .panelContent {
+    grid-template-columns: 1fr;
+  }
+
+  .panelOutput {
+    border-left: 0;
+    border-top: 1px solid rgba(16, 37, 66, 0.08);
+  }
+
+  .statsLayout,
+  .pieWrap {
+    grid-template-columns: 1fr;
+  }
+
+  .insightMetrics,
+  .summaryCards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboardSingle {
+    width: min(100% - 20px, 1100px);
+    margin: 18px auto;
+  }
+
+  .viewSwitch {
+    display: flex;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .viewTab {
+    flex: 1;
+  }
+
+  .panelColumn,
+  .historyViewHeader,
+  .historyCard,
+  .statsLayout {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .statsLayout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .summaryCards,
+  .insightMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .chartCard {
+    padding: 16px;
+  }
+
+  .buttonRow {
+    flex-direction: column;
+  }
+
+  .header h1 {
+    font-size: 1.7rem;
+  }
 }

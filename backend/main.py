@@ -23,7 +23,7 @@ except ImportError:
 # Create FastAPI application metadata shown in API docs.
 app = FastAPI(
     title="Vehicle Safety Prediction API",
-    description="Predicts vehicle safety status from sensor data using a trained Random Forest model.",
+    description="Uses the trained model.pkl artifact to predict vehicle safety.",
     version="1.0.0",
 )
 
@@ -43,6 +43,79 @@ app.add_middleware(
 # Create database tables if they do not already exist.
 Base.metadata.create_all(bind=engine)
 
+DEFAULT_AXIS = 0.0
+DEFAULT_SPEED = 60.0
+DEFAULT_STEERING_ANGLE = 0.0
+NO_COLLISION_TTC = 999.0
+IMMINENT_DISTANCE_M = 2.0
+STATUS_GUIDANCE = {
+    "SAFE": "No immediate collision risk detected. Keep a safe buffer and continue monitoring traffic.",
+    "RISK": "Caution advised. Reduce speed slightly and prepare to brake if the gap closes.",
+    "HIGH RISK": "High collision risk detected. Brake firmly and increase following distance now.",
+    "COLLIDED": "Collision state detected. Stop the vehicle and assess the surroundings immediately.",
+}
+
+
+def check_edge_case(distance: float, relative_velocity: float) -> tuple[str, float | None, str] | None:
+    # A zero gap is a collision regardless of model output.
+    if distance == 0:
+        return (
+            "COLLIDED",
+            0.0,
+            "Distance is 0 m. The vehicle is already in collision with the obstacle.",
+        )
+
+    # A very small gap with positive closing speed is treated as an immediate hazard.
+    if distance <= IMMINENT_DISTANCE_M and relative_velocity > 0:
+        ttc = round(distance / relative_velocity, 2)
+        return (
+            "HIGH RISK",
+            ttc,
+            f"Obstacle is extremely close. Estimated TTC is {ttc:.2f} seconds. Brake immediately.",
+        )
+
+    # A very small gap is still risky even when the vehicles are not closing.
+    if distance <= IMMINENT_DISTANCE_M and relative_velocity <= 0:
+        return (
+            "RISK",
+            None,
+            "Obstacle is very close. Maintain braking distance and avoid moving forward.",
+        )
+
+    return None
+
+
+def derive_ttc(distance: float, relative_velocity: float) -> float:
+    # Preserve an immediate-collision signal for zero-gap inputs.
+    if distance == 0:
+        return 0.0
+    # Model requires a numeric TTC value even when the gap is stable/increasing.
+    if relative_velocity <= 0:
+        return NO_COLLISION_TTC
+    return round(distance / relative_velocity, 2)
+
+
+def build_model_input(distance: float, relative_velocity: float) -> dict:
+    ttc = derive_ttc(distance, relative_velocity)
+    return {
+        "distance": distance,
+        "ttc": ttc,
+        "axis": DEFAULT_AXIS,
+        "speed": DEFAULT_SPEED,
+        "steering_angle": DEFAULT_STEERING_ANGLE,
+        "relative_velocity": relative_velocity,
+    }
+
+
+def build_prediction_message(prediction: str, ttc: float | None) -> str:
+    guidance = STATUS_GUIDANCE.get(
+        prediction,
+        "Drive cautiously and keep monitoring the obstacle distance.",
+    )
+    if ttc is None:
+        return f"{prediction}: {guidance}"
+    return f"{prediction}: TTC is {ttc:.2f} seconds. {guidance}"
+
 
 @app.get("/", tags=["Health"])
 def root():
@@ -52,25 +125,41 @@ def root():
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Prediction"])
 def predict(sensor: SensorInput, db: Session = Depends(get_db)):
-    # Convert validated Pydantic input into plain dictionary for ML model.
-    sensor_values = sensor.model_dump()
-    try:
-        # Predict safety status using loaded model artifact.
-        prediction = predict_status(sensor_values)
-    except KeyError as exc:
-        # Return readable API error if model expects a missing feature.
-        raise HTTPException(
-            status_code=500,
-            detail=f"Model feature mismatch: missing field `{exc.args[0]}`.",
-        ) from exc
+    edge_case = check_edge_case(sensor.distance, sensor.relative_velocity)
+    if edge_case is not None:
+        prediction, response_ttc, message = edge_case
+        ttc = 0.0 if response_ttc == 0.0 else None
+        sensor_values = {
+            "axis": DEFAULT_AXIS,
+            "speed": DEFAULT_SPEED,
+            "steering_angle": DEFAULT_STEERING_ANGLE,
+        }
+    else:
+        # Build the full feature vector expected by model.pkl from user input plus defaults.
+        sensor_values = build_model_input(sensor.distance, sensor.relative_velocity)
+        try:
+            prediction = predict_status(sensor_values)
+        except KeyError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Model feature mismatch: missing field `{exc.args[0]}`.",
+            ) from exc
+
+        ttc = sensor_values["ttc"]
+        if ttc == NO_COLLISION_TTC:
+            message = build_prediction_message(prediction, None)
+            response_ttc = None
+        else:
+            message = build_prediction_message(prediction, ttc)
+            response_ttc = ttc
 
     # Build ORM object for audit/history persistence.
     record = PredictionRecord(
         distance=sensor.distance,
-        ttc=sensor.ttc,
-        axis=sensor.axis,
-        speed=sensor.speed,
-        steering_angle=sensor.steering_angle,
+        ttc=ttc,
+        axis=sensor_values["axis"],
+        speed=sensor_values["speed"],
+        steering_angle=sensor_values["steering_angle"],
         relative_velocity=sensor.relative_velocity,
         predicted_status=prediction,
     )
@@ -79,17 +168,10 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(record)
 
-    # Map predicted status to user-friendly message text.
-    messages = {
-        "SAFE": "✅ Vehicle is operating safely.",
-        "RISK": "⚠️  Warning: Caution advised, risky conditions detected.",
-        "HIGH RISK": "🚨 DANGER: Immediate action required!",
-    }
-
-    # Return normalized status and readable message to frontend.
     return PredictionResponse(
         predicted_status=prediction,
-        message=messages.get(prediction, "Status predicted."),
+        ttc=response_ttc,
+        message=message,
     )
 
 

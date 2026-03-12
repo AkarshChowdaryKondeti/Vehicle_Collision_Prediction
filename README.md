@@ -2,15 +2,16 @@
 
 ## Overview
 
-The **Vehicle Safety Prediction System** is a full-stack application that uses machine learning to predict vehicle safety based on sensor inputs. The system classifies the safety of the vehicle into three categories: `SAFE`, `RISK`, and `HIGH RISK`. The backend is powered by **FastAPI** and the frontend is built with **React**. Prediction history is stored in an **SQLite** database for tracking and analysis.
+The **Vehicle Safety Prediction System** is a full-stack application that uses machine learning to predict vehicle safety from obstacle distance and relative velocity. The system returns one of four statuses: `SAFE`, `RISK`, `HIGH RISK`, or `COLLIDED`. The backend is powered by **FastAPI**, the frontend is built with **React**, and prediction history is stored in an **SQLite** database for traceability and basic analytics.
 
 ---
 
 ## Features
 
-- **Real-time Safety Prediction**: Classifies vehicle safety based on sensor data.
+- **Real-time Safety Prediction**: Classifies vehicle safety based on live input values and computed TTC.
 - **Prediction History**: Stores each prediction with sensor values for traceability.
-- **User Dashboard**: A React-based UI for interaction with real-time safety predictions and history.
+- **Statistics Dashboard**: Shows status distribution using pie and bar charts derived from stored history.
+- **User Dashboard**: A React-based UI with separate `Predict`, `History`, and `Statistics` views.
 
 ---
 
@@ -32,10 +33,15 @@ vehicle_safety/
 │   ├── public/            # Static assets
 │   └── src/
 │       ├── index.js       # React entry point
-│       ├── components/App.js # Main app component
+│       ├── components/App.js          # App shell and tab switching
+│       ├── components/PredictView.js  # Prediction input/output view
+│       ├── components/HistoryView.js  # Prediction history table
+│       ├── components/StatisticsView.js # Statistics charts
+│       ├── components/statusConfig.js # Shared status colors and normalization
 │       └── styles/App.css # Styling for the frontend
 ├── data/
 │   └── vehicle_dataset.csv  # Dataset reference (for review/demo)
+├── view_predictions.py      # Helper script to inspect stored DB rows
 └── README.md              # Project overview and setup guide
 ```
 
@@ -47,7 +53,7 @@ vehicle_safety/
 
 * The backend runs on **FastAPI**, where sensor data is sent via the `POST /predict` endpoint for processing.
 * It loads a pre-trained model from `backend/model.pkl` (or `MODEL_PATH` env var).
-* The prediction is returned to the frontend with a safety status of `SAFE`, `RISK`, or `HIGH RISK`.
+* The prediction is returned to the frontend with a safety status, TTC when applicable, and a short recommendation-style message.
 * Each prediction is saved in the **SQLite database** (`predictions.db`), which stores all sensor data, predictions, and timestamps.
 
 ### Frontend
@@ -56,7 +62,8 @@ vehicle_safety/
 
   * Display real-time safety predictions.
   * Show a history of past predictions.
-* The app is user-friendly, displaying safety statuses with corresponding colors and messages.
+  * Visualize status distribution in the `Statistics` tab.
+* The app displays safety statuses with corresponding colors, TTC values, and descriptive messages.
 
 ---
 
@@ -129,11 +136,7 @@ vehicle_safety/
 
     ```json
     {
-      "distance": 100,
-      "ttc": 2.5,
-      "axis": 0.1,
-      "speed": 50,
-      "steering_angle": 10,
+      "distance": 30,
       "relative_velocity": 5
     }
     ```
@@ -142,7 +145,8 @@ vehicle_safety/
     ```json
     {
       "predicted_status": "SAFE",
-      "message": "✅ Vehicle is operating safely."
+      "ttc": 6.0,
+      "message": "SAFE: TTC is 6.00 seconds. No immediate collision risk detected. Keep a safe buffer and continue monitoring traffic."
     }
     ```
 * **GET /history**: Fetch the latest prediction history (supports `limit` parameter).
@@ -167,6 +171,24 @@ vehicle_safety/
    * `0 -> HIGH RISK`
    * `1 -> RISK`
    * `2 -> SAFE`
+4. **Edge-Case Handling**:
+
+   * `distance = 0` is treated as `COLLIDED`
+   * very small distance with positive closing speed is treated as `HIGH RISK`
+   * TTC is omitted when relative velocity is zero or negative
+
+5. **Response Messaging**:
+
+   * `SAFE`: `SAFE: TTC is 6.00 seconds. No immediate collision risk detected. Keep a safe buffer and continue monitoring traffic.`
+   * `RISK`: `RISK: Caution advised. Reduce speed slightly and prepare to brake if the gap closes.`
+   * `HIGH RISK`: `HIGH RISK: TTC is 1.20 seconds. High collision risk detected. Brake firmly and increase following distance now.`
+   * `COLLIDED`: `Distance is 0 m. The vehicle is already in collision with the obstacle.`
+
+6. **Frontend Views**:
+
+   * `Predict`: accepts `distance` and `relative_velocity`, then shows status, TTC, and message
+   * `History`: displays recent prediction rows from the database
+   * `Statistics`: displays a pie chart for status distribution and a bar chart for class counts
 
 ---
 
@@ -174,7 +196,9 @@ vehicle_safety/
 
 * **Frontend** makes requests to the backend at `http://localhost:8000`.
 * **Prediction history** is stored in the **SQLite database** (`predictions.db`).
+* The frontend statistics view uses the same stored history data and normalizes valid status labels for charting.
 * Runtime inference uses a fixed `backend/model.pkl`; model training is not part of this repository workflow.
+* CI is defined in `.github/workflows/ci.yml` and runs backend syntax/import checks plus frontend build/test checks.
 * **Scalable Deployment**: This project can be deployed to cloud platforms like AWS, Heroku, or DigitalOcean for production use.
 
 ---

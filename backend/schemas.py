@@ -6,23 +6,26 @@ from pydantic import BaseModel, Field
 
 class SensorInput(BaseModel):
     # Distance to nearest obstacle in meters.
-    distance: float = Field(..., example=15.4, description="Distance to nearest object (m)")
-    # Time-to-collision estimate in seconds.
-    ttc: float = Field(..., example=1.8, description="Time-to-collision (s)")
-    # Lateral axis deviation value from sensor.
-    axis: float = Field(..., example=0.3, description="Lateral axis deviation")
-    # Vehicle speed in km/h at inference time.
-    speed: float = Field(..., example=72.0, description="Vehicle speed (km/h)")
-    # Steering angle in degrees.
-    steering_angle: float = Field(..., example=5.0, description="Steering wheel angle (°)")
+    distance: float = Field(
+        ...,
+        ge=0,
+        example=15.4,
+        description="Distance to nearest object (m)",
+    )
     # Relative closing/opening velocity in m/s.
-    relative_velocity: float = Field(..., example=-10.0, description="Relative velocity to object (m/s)")
+    relative_velocity: float = Field(
+        ...,
+        example=10.0,
+        description="Relative velocity to object (m/s). Positive means closing in.",
+    )
 
 
 class PredictionResponse(BaseModel):
-    # Final predicted risk class returned by API.
+    # ADAS-like risk category derived from TTC bands.
     predicted_status: str
-    # Human-readable message corresponding to predicted class.
+    # Computed TTC in seconds when closing speed is positive.
+    ttc: float | None
+    # Human-readable message corresponding to computed TTC and severity.
     message: str
 
 
@@ -31,7 +34,7 @@ class HistoryRecord(BaseModel):
     id: int
     # Persisted input features used for that prediction.
     distance: float
-    ttc: float
+    ttc: float | None
     axis: float
     speed: float
     steering_angle: float
