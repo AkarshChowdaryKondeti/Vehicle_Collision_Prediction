@@ -1,37 +1,29 @@
-# FastAPI primitives for API app, dependency injection, and HTTP errors.
 from fastapi import Depends, FastAPI, HTTPException
-# Middleware used to allow browser cross-origin requests.
 from fastapi.middleware.cors import CORSMiddleware
-# SQLAlchemy session type for request-scoped DB operations.
 from sqlalchemy.orm import Session
-# Read environment variables such as CORS_ORIGINS.
 import os
 
 try:
-    # Package-style imports when running as module.
     from .database import Base, engine, get_db
     from .ml import predict_status
     from .models import PredictionRecord
     from .schemas import HistoryRecord, PredictionResponse, SensorInput
 except ImportError:
-    # Fallback imports when running files directly.
+    # Allow direct script execution.
     from database import Base, engine, get_db
     from ml import predict_status
     from models import PredictionRecord
     from schemas import HistoryRecord, PredictionResponse, SensorInput
 
-# Create FastAPI application metadata shown in API docs.
 app = FastAPI(
     title="Vehicle Safety Prediction API",
     description="Uses the trained model.pkl artifact to predict vehicle safety.",
     version="1.0.0",
 )
 
-# Read allowed frontend origins from env and split comma-separated values.
 cors_origins = os.getenv(
     "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
 ).split(",")
-# Register CORS policy so browser clients can call this API.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[origin.strip() for origin in cors_origins if origin.strip()],
@@ -40,7 +32,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create database tables if they do not already exist.
 Base.metadata.create_all(bind=engine)
 
 DEFAULT_AXIS = 0.0
@@ -57,7 +48,6 @@ STATUS_GUIDANCE = {
 
 
 def check_edge_case(distance: float, relative_velocity: float) -> tuple[str, float | None, str] | None:
-    # A zero gap is a collision regardless of model output.
     if distance == 0:
         return (
             "COLLIDED",
@@ -65,7 +55,7 @@ def check_edge_case(distance: float, relative_velocity: float) -> tuple[str, flo
             "Distance is 0 m. The vehicle is already in collision with the obstacle.",
         )
 
-    # A very small gap with positive closing speed is treated as an immediate hazard.
+    # Override the model for immediate hazard cases.
     if distance <= IMMINENT_DISTANCE_M and relative_velocity > 0:
         ttc = round(distance / relative_velocity, 2)
         return (
@@ -74,7 +64,6 @@ def check_edge_case(distance: float, relative_velocity: float) -> tuple[str, flo
             f"Obstacle is extremely close. Estimated TTC is {ttc:.2f} seconds. Brake immediately.",
         )
 
-    # A very small gap is still risky even when the vehicles are not closing.
     if distance <= IMMINENT_DISTANCE_M and relative_velocity <= 0:
         return (
             "RISK",
@@ -86,10 +75,9 @@ def check_edge_case(distance: float, relative_velocity: float) -> tuple[str, flo
 
 
 def derive_ttc(distance: float, relative_velocity: float) -> float:
-    # Preserve an immediate-collision signal for zero-gap inputs.
     if distance == 0:
         return 0.0
-    # Model requires a numeric TTC value even when the gap is stable/increasing.
+    # The model expects a numeric TTC even when there is no closing speed.
     if relative_velocity <= 0:
         return NO_COLLISION_TTC
     return round(distance / relative_velocity, 2)
@@ -119,7 +107,6 @@ def build_prediction_message(prediction: str, ttc: float | None) -> str:
 
 @app.get("/", tags=["Health"])
 def root():
-    # Simple health endpoint confirming API process is alive.
     return {"status": "ok", "message": "Vehicle Safety Prediction API is running."}
 
 
@@ -135,7 +122,6 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
             "steering_angle": DEFAULT_STEERING_ANGLE,
         }
     else:
-        # Build the full feature vector expected by model.pkl from user input plus defaults.
         sensor_values = build_model_input(sensor.distance, sensor.relative_velocity)
         try:
             prediction = predict_status(sensor_values)
@@ -153,7 +139,6 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
             message = build_prediction_message(prediction, ttc)
             response_ttc = ttc
 
-    # Build ORM object for audit/history persistence.
     record = PredictionRecord(
         distance=sensor.distance,
         ttc=ttc,
@@ -163,7 +148,6 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
         relative_velocity=sensor.relative_velocity,
         predicted_status=prediction,
     )
-    # Persist prediction row in database.
     db.add(record)
     db.commit()
     db.refresh(record)
@@ -177,12 +161,10 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
 
 @app.get("/history", response_model=list[HistoryRecord], tags=["History"])
 def get_history(limit: int = 50, db: Session = Depends(get_db)):
-    # Fetch latest prediction rows in descending timestamp order.
     records = (
         db.query(PredictionRecord)
         .order_by(PredictionRecord.timestamp.desc())
         .limit(limit)
         .all()
     )
-    # Let FastAPI serialize ORM rows into HistoryRecord schema.
     return records
