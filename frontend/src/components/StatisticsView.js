@@ -1,5 +1,6 @@
 import React from "react";
 import { STATUS_COLORS, STATUS_ORDER, normalizeStatus } from "./statusConfig";
+import StatusBadge from "./StatusBadge";
 
 function ChartFrame({ title, children }) {
   return (
@@ -121,7 +122,7 @@ function StatusBreakdownTable({ counts, total }) {
                       className="legendDot"
                       style={{ background: STATUS_COLORS[status] }}
                     />
-                    {status}
+                    <StatusBadge status={status} />
                   </span>
                 </td>
                 <td>{count}</td>
@@ -166,13 +167,54 @@ function CriticalInsight({ counts, total }) {
   );
 }
 
-function StatisticsView({ history, histLoading }) {
+function downloadHistoryCsv(history) {
+  const header = [
+    "id",
+    "timestamp",
+    "distance_m",
+    "ttc_s",
+    "relative_velocity_mps",
+    "predicted_status",
+  ];
+  const rows = history.map((row) => [
+    row.id,
+    row.timestamp,
+    row.distance,
+    row.ttc === null ? "" : row.ttc,
+    row.relative_velocity,
+    normalizeStatus(row.predicted_status) || row.predicted_status,
+  ]);
+  const csvContent = [header, ...rows]
+    .map((line) => line.map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(","))
+    .join("\n");
+
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "vehicle-safety-history.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function StatisticsView({ history, histLoading, onToast }) {
   if (histLoading) {
     return (
       <section className="panel mainPanel">
         <div className="historyViewHeader">
           <h2>Statistics</h2>
-          <p>Loading prediction statistics...</p>
+        </div>
+        <div className="statsLayout">
+          <div className="chartCard">
+            <div className="skeletonLine skeletonLineWide" />
+            <div className="skeletonBlock" />
+          </div>
+          <div className="chartCard">
+            <div className="skeletonLine skeletonLineWide" />
+            <div className="skeletonLine" />
+            <div className="skeletonLine" />
+            <div className="skeletonLine skeletonLineShort" />
+          </div>
         </div>
       </section>
     );
@@ -192,11 +234,25 @@ function StatisticsView({ history, histLoading }) {
     <section className="panel mainPanel">
       <div className="historyViewHeader">
         <h2>Statistics</h2>
+        <button
+          type="button"
+          className="secondaryButton"
+          onClick={() => {
+            downloadHistoryCsv(history);
+            onToast("Statistics history exported to CSV.", "success");
+          }}
+          disabled={total === 0}
+        >
+          Export to CSV
+        </button>
       </div>
 
       {total === 0 ? (
         <div className="historyCard">
-          <p>No predictions available for statistics.</p>
+          <div className="emptyState">
+            <strong>No statistics available</strong>
+            <p>Run a few predictions to generate charts, summaries, and exportable data.</p>
+          </div>
         </div>
       ) : (
         <div className="statsLayout">

@@ -149,7 +149,7 @@ vehicle_safety/
       "message": "SAFE: TTC is 6.00 seconds. No immediate collision risk detected. Keep a safe buffer and continue monitoring traffic."
     }
     ```
-* **GET /history**: Fetch the latest prediction history (supports `limit` parameter).
+* **GET /history**: Fetch the latest prediction history. Omit `limit` to return all records.
 
   * Example request: `GET /history?limit=50`
 

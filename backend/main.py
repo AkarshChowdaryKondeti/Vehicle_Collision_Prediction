@@ -160,11 +160,11 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
 
 
 @app.get("/history", response_model=list[HistoryRecord], tags=["History"])
-def get_history(limit: int = 50, db: Session = Depends(get_db)):
-    records = (
-        db.query(PredictionRecord)
-        .order_by(PredictionRecord.timestamp.desc())
-        .limit(limit)
-        .all()
-    )
+def get_history(limit: int | None = None, db: Session = Depends(get_db)):
+    query = db.query(PredictionRecord).order_by(PredictionRecord.timestamp.desc())
+
+    if limit is not None:
+        query = query.limit(limit)
+
+    records = query.all()
     return records

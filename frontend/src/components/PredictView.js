@@ -1,5 +1,6 @@
 import React from "react";
 import { STATUS_THEME } from "./statusConfig";
+import StatusBadge from "./StatusBadge";
 
 function PredictView({
   form,
@@ -58,12 +59,19 @@ function PredictView({
           <h2>Output</h2>
 
           {!result && !loading && (
-            <div className="placeholder">
-              <p>Enter distance and relative velocity to generate a prediction.</p>
+            <div className="emptyState">
+              <strong>No prediction yet</strong>
+              <p>Enter distance and relative velocity to generate a vehicle safety result.</p>
             </div>
           )}
 
-          {loading && <div className="placeholder">Predicting...</div>}
+          {loading && (
+            <div className="skeletonCard" aria-hidden="true">
+              <div className="skeletonLine skeletonLineWide" />
+              <div className="skeletonLine" />
+              <div className="skeletonLine skeletonLineShort" />
+            </div>
+          )}
 
           {result && theme && (
             <div
@@ -71,8 +79,8 @@ function PredictView({
               style={{ background: theme.bg, border: `2px solid ${theme.border}` }}
             >
               <div>
-                <div className="statusLabel" style={{ color: theme.text }}>
-                  {result.predicted_status}
+                <div className="statusLabel">
+                  <StatusBadge status={result.predicted_status} />
                 </div>
                 <div className="metricRow">
                   <span>Time To Collision</span>
