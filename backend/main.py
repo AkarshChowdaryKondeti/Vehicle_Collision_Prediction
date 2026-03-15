@@ -39,6 +39,16 @@ DEFAULT_SPEED = 60.0
 DEFAULT_STEERING_ANGLE = 0.0
 NO_COLLISION_TTC = 999.0
 IMMINENT_DISTANCE_M = 2.0
+HIGH_RISK_TTC_S = 2.0
+RISK_TTC_S = 4.0
+HIGH_RISK_DISTANCE_M = 3.0
+RISK_DISTANCE_M = 5.0
+STATUS_PRIORITY = {
+    "SAFE": 0,
+    "RISK": 1,
+    "HIGH RISK": 2,
+    "COLLIDED": 3,
+}
 STATUS_GUIDANCE = {
     "SAFE": "No immediate collision risk detected. Keep a safe buffer and continue monitoring traffic.",
     "RISK": "Caution advised. Reduce speed slightly and prepare to brake if the gap closes.",
@@ -83,6 +93,40 @@ def derive_ttc(distance: float, relative_velocity: float) -> float:
     return round(distance / relative_velocity, 2)
 
 
+def derive_rule_based_status(distance: float, relative_velocity: float, ttc: float) -> str | None:
+    if relative_velocity <= 0:
+        if distance <= HIGH_RISK_DISTANCE_M:
+            return "RISK"
+        return None
+
+    if distance <= HIGH_RISK_DISTANCE_M or ttc <= HIGH_RISK_TTC_S:
+        return "HIGH RISK"
+
+    if distance <= RISK_DISTANCE_M or ttc <= RISK_TTC_S:
+        return "RISK"
+
+    return None
+
+
+def apply_safety_guardrails(
+    model_prediction: str, distance: float, relative_velocity: float, ttc: float
+) -> str:
+    rule_based_status = derive_rule_based_status(distance, relative_velocity, ttc)
+    if rule_based_status is None:
+        return model_prediction
+
+    model_priority = STATUS_PRIORITY.get(model_prediction, -1)
+    rule_priority = STATUS_PRIORITY[rule_based_status]
+
+    if distance <= RISK_DISTANCE_M and relative_velocity > 0 and ttc <= RISK_TTC_S:
+        return rule_based_status
+
+    if rule_priority > model_priority:
+        return rule_based_status
+
+    return model_prediction
+
+
 def build_model_input(distance: float, relative_velocity: float) -> dict:
     ttc = derive_ttc(distance, relative_velocity)
     return {
@@ -124,7 +168,7 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
     else:
         sensor_values = build_model_input(sensor.distance, sensor.relative_velocity)
         try:
-            prediction = predict_status(sensor_values)
+            model_prediction = predict_status(sensor_values)
         except KeyError as exc:
             raise HTTPException(
                 status_code=500,
@@ -132,6 +176,12 @@ def predict(sensor: SensorInput, db: Session = Depends(get_db)):
             ) from exc
 
         ttc = sensor_values["ttc"]
+        prediction = apply_safety_guardrails(
+            model_prediction,
+            sensor.distance,
+            sensor.relative_velocity,
+            ttc,
+        )
         if ttc == NO_COLLISION_TTC:
             message = build_prediction_message(prediction, None)
             response_ttc = None
