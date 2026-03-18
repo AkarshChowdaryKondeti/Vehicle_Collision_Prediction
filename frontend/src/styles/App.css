@@ -371,6 +371,7 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+  align-items: flex-end;
 }
 
 .historyFilterSelect {
@@ -685,6 +686,19 @@ body {
   .dashboardSingle {
     width: min(100% - 20px, 1100px);
     margin: 18px auto;
+  }
+
+  .historyControls {
+    width: 100%;
+  }
+
+  .historySortOptions {
+    max-width: none;
+  }
+
+  .historyDayHeader {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .viewSwitch {

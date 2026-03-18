@@ -1,53 +1,104 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import StatusBadge from "./StatusBadge";
 import { normalizeStatus } from "./statusConfig";
 
 const RECORDS_PER_PAGE = 10;
 const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "oldest", label: "Oldest" },
-  { value: "highest-ttc", label: "Highest TTC" },
-  { value: "lowest-ttc", label: "Lowest TTC" },
+  { value: "sort:newest", label: "Newest First" },
+  { value: "sort:oldest", label: "Oldest First" },
+  { value: "preset:today", label: "Today" },
+  { value: "preset:yesterday", label: "Yesterday" },
+  { value: "preset:last-7-days", label: "Last 7 Days" },
+  { value: "preset:this-month", label: "This Month" },
 ];
+
+function getDateValue(timestamp) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 function sortHistory(records, sortBy) {
   const sorted = [...records];
 
   sorted.sort((a, b) => {
-    if (sortBy === "oldest") {
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-    }
-
-    if (sortBy === "highest-ttc" || sortBy === "lowest-ttc") {
-      const aTtc = a.ttc === null ? Number.POSITIVE_INFINITY : a.ttc;
-      const bTtc = b.ttc === null ? Number.POSITIVE_INFINITY : b.ttc;
-      return sortBy === "highest-ttc" ? bTtc - aTtc : aTtc - bTtc;
-    }
-
-    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    const aTime = new Date(a.timestamp).getTime();
+    const bTime = new Date(b.timestamp).getTime();
+    return sortBy === "oldest" ? aTime - bTime : bTime - aTime;
   });
 
   return sorted;
 }
 
+function matchesDatePreset(timestamp, preset) {
+  if (!preset) {
+    return true;
+  }
+
+  const recordDate = new Date(timestamp);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const recordStart = new Date(
+    recordDate.getFullYear(),
+    recordDate.getMonth(),
+    recordDate.getDate(),
+  );
+
+  if (preset === "today") {
+    return recordStart.getTime() === todayStart.getTime();
+  }
+
+  if (preset === "yesterday") {
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    return recordStart.getTime() === yesterdayStart.getTime();
+  }
+
+  if (preset === "last-7-days") {
+    const last7Start = new Date(todayStart);
+    last7Start.setDate(last7Start.getDate() - 6);
+    return recordStart >= last7Start && recordStart <= todayStart;
+  }
+
+  if (preset === "this-month") {
+    return (
+      recordDate.getFullYear() === today.getFullYear() &&
+      recordDate.getMonth() === today.getMonth()
+    );
+  }
+
+  return true;
+}
+
 function HistoryView({ history, histLoading }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("All");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortSelection, setSortSelection] = useState("sort:newest");
 
   const statusOptions = [
     "All",
     ...new Set(history.map((row) => normalizeStatus(row.predicted_status)).filter(Boolean)),
   ];
-  const filteredHistory =
-    statusFilter === "All"
-      ? history
-      : history.filter((row) => normalizeStatus(row.predicted_status) === statusFilter);
-  const sortedHistory = sortHistory(filteredHistory, sortBy);
+
+  const selectedPreset = sortSelection.startsWith("preset:") ? sortSelection.slice(7) : "";
+  const sortBy = sortSelection === "sort:oldest" ? "oldest" : "newest";
+
+  const filteredHistory = useMemo(() => {
+    return history.filter((row) => {
+      const matchesStatus =
+        statusFilter === "All" || normalizeStatus(row.predicted_status) === statusFilter;
+      const matchesPreset = matchesDatePreset(row.timestamp, selectedPreset);
+      return matchesStatus && matchesPreset;
+    });
+  }, [history, selectedPreset, statusFilter]);
+
+  const sortedHistory = useMemo(() => sortHistory(filteredHistory, sortBy), [filteredHistory, sortBy]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [history, histLoading, statusFilter, sortBy]);
+  }, [history, histLoading, sortSelection, statusFilter]);
 
   const totalPages = Math.ceil(sortedHistory.length / RECORDS_PER_PAGE);
   const startIndex = (currentPage - 1) * RECORDS_PER_PAGE;
@@ -78,14 +129,23 @@ function HistoryView({ history, histLoading }) {
             <span>Sort</span>
             <select
               className="historyFilterSelect"
-              value={sortBy}
-              onChange={(event) => setSortBy(event.target.value)}
+              value={sortSelection}
+              onChange={(event) => setSortSelection(event.target.value)}
             >
-              {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
+              <optgroup label="Order">
+                {SORT_OPTIONS.filter((option) => option.value.startsWith("sort:")).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Date Range">
+                {SORT_OPTIONS.filter((option) => option.value.startsWith("preset:")).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </label>
         </div>
@@ -107,7 +167,7 @@ function HistoryView({ history, histLoading }) {
         ) : filteredHistory.length === 0 ? (
           <div className="emptyState">
             <strong>No matching records</strong>
-            <p>Try another status filter to see more prediction history.</p>
+            <p>Try another status or sort selection.</p>
           </div>
         ) : (
           <>
